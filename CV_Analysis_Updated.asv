@@ -1,0 +1,221 @@
+%%% Math Tank Fill up %%% 
+
+%Problem Analysis 
+clear; clc;
+R = 287; %j/kg*k
+gamma = 1.4;
+
+P_i = 101325; %Pa
+P_tank = [];
+P_f = 1.31e+6; %Pa, The final pressure of the tank 
+T_i = 300; %Kelvin
+T_f = T_i; %Assuming Isothermal. 
+r = 1/2; %m. This is the radius of the tank
+h = 4; %m. This is the height of the tank
+V_tank = pi*h*r^2; %Volume of Tank
+A_star = 0.0088*5; %Area of Throat. m^2
+rho_i = P_i/(R*T_i); %kg/m^3
+rho_f = P_f/(R*T_f); %kg/m^3
+rho_ambient = 1.225; %kg/m^3
+m_i = V_tank*rho_i;% Initial Mass. Kg
+m_f = V_tank*rho_f; %Final Mass. Kg
+m_dot_in = 3; %kg/s 
+
+
+
+%%%% Transient Analysis based on continuity Equation %%%%
+
+%initializing Variables
+t_list = linspace(0,50,100);
+m_tank_in = [];
+m_tank = [];
+M = [];
+rho_tank = [];
+m_dot_out = [];
+P_tank = [];
+m_tank = [];
+m_tank(1) = m_i;
+
+%Numerical Analysis
+for i = 2:numel(t_list)
+    m_tank_in(i) = m_tank(i-1) + m_dot_in*(t_list(i)-t_list(i-1));
+    rho_tank(i) = m_tank_in(i)/V_tank;
+    P_tank(i)= rho_tank(i)*R*T_i;
+    [M(i),T,P,rho_ratio,area] = flowisentropic(gamma,(1/(rho_tank(i)/rho_ambient)),'dens');
+    if M(i) > 1
+                M(i) = 1;
+                m_dot_out(i) = (((A_star*P_tank(i)))/(T_i))*sqrt(gamma/R)*(((gamma+1)/2))^((-gamma-1)/(2*(gamma-1)));
+            else
+                m_dot_out(i) = (((A_star*P_tank(i)))/(T_i))*sqrt(gamma/R)*M(i)*(1 + ((gamma-1)/2)*M(i)^2)^((-gamma-1)/(2*(gamma-1)));
+            end
+    m_tank(i) = m_tank_in(i) - m_dot_out(i)*(t_list(i)-t_list(i-1));
+    
+end
+
+%%% GRAPHS PLOTTED HERE %%%
+
+%Pressure Vs Time Graph
+figure(1)
+plot(t_list,P_tank)
+title("Pressure Vs Time")
+xlabel("Time[s]")
+ylabel("Pressure[Pa]")
+grid on 
+
+%Mass flow out vs Time Graph
+figure(2)
+plot(t_list,m_dot_out)
+title("Mass Flow Out Vs Time");
+xlabel("Times[s]")
+ylabel("Mass flow out[Kg/s]")
+grid on
+
+%Mach number vs Time Graph
+figure(3)
+plot(t_list,M)
+title("Mach Vs Time")
+xlabel("Time[s]")
+ylabel("Mach")
+grid on
+
+
+%Mass Vs Time Graph
+figure(4)
+plot(t_list,m_tank);
+title("Tank Mass vs Time");
+xlabel("Times[s]")
+ylabel("Tank Mass[kg]")
+grid on 
+
+%% Kantrowitz Limit %% 
+M_test = linspace(1,3,20);
+A_tunnel = 0.0232258;
+A_model = [];
+A_ratio = [];
+for i = 1:numel(M_test)
+    A_ratio(i) = (M_test(i)*((1+((gamma-1)/2)*M_test(i)^2)/((gamma+1)/2))^((-gamma-1)/(2*(gamma-1))))*(((gamma+1)*M_test(i)^2)/((gamma-1)*M_test(i)^2 +2))^(-gamma/(gamma-1)) * ((gamma+1)/(2*gamma*M_test(i)^2 -(gamma-1)))^(-1/(gamma-1));
+    A_model(i) = A_ratio(i)*A_tunnel;
+end
+
+%Mach Vs Area Ratio graph
+figure(5)
+plot(M_test,A_ratio)
+xlabel("Mach")
+ylabel("Area Ratio")
+title("Mach Vs Area Ratio")
+grid on 
+
+%Mach Vs Area of Model Based on tunnel Design graph
+figure(6)
+plot(M_test,A_model);
+xlabel("Mach")
+ylabel("Area of Model[m^2]")
+title("Mach Vs Area")
+grid on 
+
+
+
+%% Iteration through various V tanks. 
+%Problem Analysis 
+clear; clc;
+R = 287; %j/kg*k
+gamma = 1.4;
+
+P_i = 101325; %Pa
+P_tank = [];
+P_f = 1.31e+6; %Pa, The final pressure of the tank 
+T_i = 300; %Kelvin
+T_f = T_i; %Assuming Isothermal. 
+r = 1/2; %m. This is the radius of the tank
+h = 4; %m. This is the height of the tank
+V_tank = linspace(1,10,10);
+A_star = 0.0088*5; %Area of Throat. m^2
+rho_i = P_i/(R*T_i); %kg/m^3
+rho_f = P_f/(R*T_f); %kg/m^3
+rho_ambient = 1.225; %kg/m^3
+m_i = V_tank.*rho_i;% Initial Mass. Kg
+m_f = V_tank.*rho_f; %Final Mass. Kg
+m_dot_in = 3; %kg/s 
+
+
+
+%%%% Transient Analysis based on continuity Equation %%%%
+
+
+
+%initializing Variables
+t_list = linspace(0,50,100);
+
+m_tank_in = cell(numel(V_tank),numel(t_list));
+m_tank_in{numel(V_tank),numel(t_list)} =[];
+
+m_tank = cell(numel(V_tank),numel(t_list));
+m_tank{numel(V_tank),numel(t_list)} =[];
+
+M = [];
+rho_tank = cell(numel(V_tank),numel(t_list));
+rho_tank{numel(V_tank),numel(t_list)} =[];
+
+m_dot_out = cell(numel(V_tank),numel(t_list));
+m_dot_out{numel(V_tank),numel(t_list)} =[];
+
+P_tank = cell(numel(V_tank),numel(t_list));
+P_tank{numel(V_tank),numel(t_list)} =[];
+
+m_tank = cell(numel(V_tank),numel(t_list));
+m_tank{numel(V_tank),numel(t_list)} =[];
+
+m_tank(1) = m_i;
+
+%Numerical Analysis
+for r = numel(V_tank)
+    for i = 2:numel(t_list)
+        m_tank_in(i) = m_tank(i-1) + m_dot_in*(t_list(i)-t_list(i-1));
+        rho_tank(i) = m_tank_in(i)/V_tank(r);
+        P_tank(i)= rho_tank(i)*R*T_i;
+        [M(i),T,P,rho_ratio,area] = flowisentropic(gamma,(1/(rho_tank(i)/rho_ambient)),'dens');
+            if M(i) > 1
+                M(i) = 1;
+                m_dot_out(i) = (((A_star*P_tank(i)))/(T_i))*sqrt(gamma/R)*(((gamma+1)/2))^((-gamma-1)/(2*(gamma-1)));
+            else
+                m_dot_out(i) = (((A_star*P_tank(i)))/(T_i))*sqrt(gamma/R)*M(i)*(1 + ((gamma-1)/2)*M(i)^2)^((-gamma-1)/(2*(gamma-1)));
+            end
+             m_tank(i) = m_tank_in(i) - m_dot_out(i)*(t_list(i)-t_list(i-1));
+    
+    end
+end
+
+%%% GRAPHS PLOTTED HERE %%%
+
+%Pressure Vs Time Graph
+figure(1)
+plot(t_list,P_tank)
+title("Pressure Vs Time")
+xlabel("Time[s]")
+ylabel("Pressure[Pa]")
+grid on 
+
+%Mass flow out vs Time Graph
+figure(2)
+plot(t_list,m_dot_out)
+title("Mass Flow Out Vs Time");
+xlabel("Times[s]")
+ylabel("Mass flow out[Kg/s]")
+grid on
+
+%Mach number vs Time Graph
+figure(3)
+plot(t_list,M)
+title("Mach Vs Time")
+xlabel("Time[s]")
+ylabel("Mach")
+grid on
+
+
+%Mass Vs Time Graph
+figure(4)
+plot(t_list,m_tank);
+title("Tank Mass vs Time");
+xlabel("Times[s]")
+ylabel("Tank Mass[kg]")
+grid on 
